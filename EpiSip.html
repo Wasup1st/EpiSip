@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EpiSip | Every Sip Saves a Life</title>
+    
+    <!-- Tailwind CSS for modern, responsive utility-first styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter for a clean, Apple-like typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- CSS SECTION -->
+    <style>
+        /* Custom Styles & Animation Classes */
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Smooth scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        /* Fade Up Animation Classes for JavaScript Intersection Observer */
+        .fade-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .fade-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Staggered delays for child elements */
+        .delay-100 { transition-delay: 100ms; }
+        .delay-200 { transition-delay: 200ms; }
+        .delay-300 { transition-delay: 300ms; }
+
+        /* Subtle gradient text */
+        .text-gradient {
+            background: linear-gradient(135deg, #2563eb, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Glassmorphism Navbar */
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* --- NEW CHAT WIDGET CSS --- */
+        .chat-widget {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 100;
+        }
+        .chat-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #0f172a;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+        .chat-btn:hover {
+            transform: scale(1.05);
+            background-color: #1e293b;
+        }
+        .chat-window {
+            position: absolute;
+            bottom: 80px;
+            right: 0;
+            width: 350px;
+            max-width: calc(100vw - 48px);
+            height: 450px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            transform-origin: bottom right;
+            transform: scale(0);
+            opacity: 0;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .chat-window.open {
+            transform: scale(1);
+            opacity: 1;
+            pointer-events: all;
+        }
+        .chat-header {
+            background-color: #0f172a;
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+        .chat-close {
+            cursor: pointer;
+            color: #94a3b8;
+            transition: color 0.2s;
+        }
+        .chat-close:hover {
+            color: white;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background-color: #f8fafc;
+        }
+        .chat-msg {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 0.875rem;
+            line-height: 1.4;
+            animation: fadeIn 0.3s ease;
+        }
+        .chat-msg.user {
+            align-self: flex-end;
+            background-color: #2563eb;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-msg.ai {
+            align-self: flex-start;
+            background-color: #f1f5f9;
+            color: #0f172a;
+            border: 1px solid #e2e8f0;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-input-area {
+            padding: 12px;
+            background: white;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            gap: 8px;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9999px;
+            outline: none;
+            font-size: 0.875rem;
+            transition: border-color 0.2s;
+        }
+        .chat-input:focus {
+            border-color: #2563eb;
+        }
+        .chat-send {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #2563eb;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s;
+        }
+        .chat-send:hover {
+            background-color: #1d4ed8;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 4px 2px;
+            align-items: center;
+            height: 18px;
+        }
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #64748b;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased selection:bg-blue-200 selection:text-blue-900">
+
+    <!-- HTML SECTION -->
+
+    <!-- Navigation -->
+    <nav id="navbar" class="fixed w-full z-50 transition-all duration-300 glass-nav py-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3 cursor-pointer" onclick="window.scrollTo(0,0)">
+                    <svg viewBox="0 0 100 120" class="h-10 w-auto rounded-md shadow-sm" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100" height="120" fill="#00A3A6"/>
+                        <path d="M50 15 C50 15 20 60 20 80 A 30 30 0 0 0 80 80 C80 60 50 15 50 15 Z" fill="white"/>
+                        <g transform="translate(50, 75) scale(0.35)" fill="#00A3A6">
+                            <rect x="-10" y="-35" width="20" height="70" rx="2" />
+                            <rect x="-10" y="-35" width="20" height="70" rx="2" transform="rotate(60)" />
+                            <rect x="-10" y="-35" width="20" height="70" rx="2" transform="rotate(120)" />
+                            <rect x="-2" y="-20" width="4" height="40" fill="white" />
+                            <path d="M -6 -10 C -15 -20, 10 -20, 2 -5 C -5 5, 10 10, 2 15" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                        </g>
+                    </svg>
+                    <span class="font-bold text-xl tracking-tight text-slate-900">EpiSip</span>
+                </div>
+                <div class="hidden md:flex space-x-8 text-sm font-medium text-slate-600">
+                    <a href="#problem" class="hover:text-blue-600 transition-colors">The Problem</a>
+                    <a href="#solution" class="hover:text-blue-600 transition-colors">Solution</a>
+                    <a href="#market" class="hover:text-blue-600 transition-colors">Market</a>
+                    <a href="#shop" class="hover:text-blue-600 transition-colors">Pre-Order</a>
+                    <a href="#team" class="hover:text-blue-600 transition-colors">Team</a>
+                </div>
+                <div>
+                    <a href="#cta" class="inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-full text-white bg-slate-900 hover:bg-slate-800 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                        Support Us
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+        <!-- Background decorative blobs -->
+        <div class="absolute top-0 left-1/2 w-full -translate-x-1/2 h-full overflow-hidden -z-10 pointer-events-none">
+            <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
+            <div class="absolute top-[20%] right-[-10%] w-96 h-96 bg-cyan-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center fade-up">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-sm font-semibold tracking-wide mb-8">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                </span>
+                Introducing EpiSip
+            </div>
+            <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6">
+                Every sip <br class="md:hidden" />
+                <span class="text-gradient">saves a life.</span>
+            </h1>
+            <p class="mt-4 max-w-2xl text-lg md:text-xl text-slate-600 mx-auto mb-10 delay-100 fade-up">
+                The world's first insulated water bottle with a hidden, secure compartment for your epinephrine auto-injector. Never leave home without it again.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4 delay-200 fade-up">
+                <a href="#solution" class="px-8 py-4 text-base font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-1">
+                    See How It Works
+                </a>
+                <a href="#problem" class="px-8 py-4 text-base font-medium rounded-full text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all hover:-translate-y-1">
+                    Why We Built It
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section id="problem" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16 fade-up">
+                <h2 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">The Reality of Anaphylaxis</h2>
+                <p class="mt-4 text-lg text-slate-600">Millions are at risk, yet carrying an EpiPen daily remains a frustrating challenge. When seconds matter, accessibility is everything.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Stat 1 -->
+                <div class="bg-slate-50 rounded-3xl p-8 border border-slate-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 fade-up">
+                    <div class="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mb-6 text-red-500">
+                        <i data-lucide="alert-triangle" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-4xl font-bold text-slate-900 mb-2">37%</h3>
+                    <p class="text-lg font-semibold text-slate-800 mb-2">Hard to access during panic</p>
+                    <p class="text-slate-600 text-sm">Buried in bags or purses, finding an auto-injector during an allergic reaction wastes precious time.</p>
+                </div>
+                <!-- Stat 2 -->
+                <div class="bg-slate-50 rounded-3xl p-8 border border-slate-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 fade-up delay-100">
+                    <div class="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mb-6 text-orange-500">
+                        <i data-lucide="package-x" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-4xl font-bold text-slate-900 mb-2">29.6%</h3>
+                    <p class="text-lg font-semibold text-slate-800 mb-2">Too bulky to carry</p>
+                    <p class="text-slate-600 text-sm">Standard auto-injectors don't fit well in pockets, making them an inconvenience for everyday carry.</p>
+                </div>
+                <!-- Stat 3 -->
+                <div class="bg-slate-50 rounded-3xl p-8 border border-slate-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 fade-up delay-200">
+                    <div class="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mb-6 text-amber-500">
+                        <i data-lucide="brain-circuit" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-4xl font-bold text-slate-900 mb-2">25.9%</h3>
+                    <p class="text-lg font-semibold text-slate-800 mb-2">Easy to forget</p>
+                    <p class="text-slate-600 text-sm">People simply forget to bring them when leaving the house, leaving them completely unprotected.</p>
+                </div>
+            </div>
+            
+            <div class="mt-16 bg-blue-900 rounded-3xl p-8 sm:p-12 text-center text-white shadow-2xl fade-up">
+                <h3 class="text-2xl font-bold mb-4">What's Needed?</h3>
+                <p class="text-blue-100 text-lg max-w-2xl mx-auto">A better way to carry EpiPens that is accessible, affordable, and highly practical. Something you already bring with you every single day.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution / Product Showcase Section -->
+    <section id="solution" class="py-24 bg-slate-50 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                
+                <!-- Left: Text & Features -->
+                <div class="fade-up">
+                    <h2 class="text-sm font-bold tracking-widest text-blue-600 uppercase mb-3">Our Solution</h2>
+                    <h3 class="text-4xl font-bold text-slate-900 mb-6">Hidden in plain sight.</h3>
+                    <p class="text-lg text-slate-600 mb-8">
+                        EpiSip is slightly thicker than a standard insulated bottle, maintaining the same height profile. It keeps your water cold and your EpiPen secure, temperature-regulated, and immediately accessible.
+                    </p>
+                    
+                    <div class="space-y-6">
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-blue-500 border border-slate-100">
+                                <i data-lucide="thermometer-snowflake" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-semibold text-slate-900">Vacuum Insulated</h4>
+                                <p class="text-slate-600 mt-1">Stainless steel outer bottle with vacuum insulation protects the EpiPen from extreme temperatures while keeping drinks cold.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-blue-500 border border-slate-100">
+                                <i data-lucide="shield-check" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-semibold text-slate-900">Secure Storage Compartment</h4>
+                                <p class="text-slate-600 mt-1">A dedicated, sealed central chamber perfectly fits a standard epinephrine auto-injector, keeping it safe from water and damage.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-blue-500 border border-slate-100">
+                                <i data-lucide="zap" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-semibold text-slate-900">Rapid Access Bottom Cap</h4>
+                                <p class="text-slate-600 mt-1">The screwable bottom cap allows for immediate extraction of the EpiPen in under 3 seconds during a panic situation.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Image Showcase -->
+                <div class="relative fade-up delay-200">
+                    <div class="absolute inset-0 bg-gradient-to-tr from-blue-100 to-cyan-50 rounded-[3rem] transform rotate-3 scale-105 -z-10 transition-transform hover:rotate-6 duration-500"></div>
+                    <div class="relative bg-white p-6 md:p-10 rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden group flex justify-center items-center">
+                        <!-- Custom SVG Cross-Section to replace broken external image -->
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 700" class="w-full h-auto max-w-lg mx-auto drop-shadow-xl transition-transform duration-700 group-hover:scale-105">
+                            <defs>
+                                <linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#cbd5e1" />
+                                    <stop offset="25%" stop-color="#f1f5f9" />
+                                    <stop offset="75%" stop-color="#e2e8f0" />
+                                    <stop offset="100%" stop-color="#94a3b8" />
+                                </linearGradient>
+                                <linearGradient id="water" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="#7dd3fc" />
+                                    <stop offset="100%" stop-color="#0284c7" />
+                                </linearGradient>
+                                <linearGradient id="darkMetal" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#334155" />
+                                    <stop offset="50%" stop-color="#64748b" />
+                                    <stop offset="100%" stop-color="#1e293b" />
+                                </linearGradient>
+                                <linearGradient id="yellowBody" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#facc15" />
+                                    <stop offset="100%" stop-color="#ca8a04" />
+                                </linearGradient>
+                            </defs>
+
+                            <ellipse cx="200" cy="650" rx="90" ry="15" fill="rgba(0,0,0,0.1)"/>
+
+                            <rect x="100" y="120" width="200" height="500" rx="30" fill="url(#metal)" stroke="#94a3b8" stroke-width="4"/>
+
+                            <path d="M120 120 Q120 90 140 80 L260 80 Q280 90 280 120 Z" fill="url(#darkMetal)"/>
+                            <rect x="140" y="60" width="120" height="20" rx="5" fill="#475569"/>
+                            <path d="M260 70 A 25 25 0 0 1 290 95 A 25 25 0 0 1 260 120" fill="none" stroke="#475569" stroke-width="12" stroke-linecap="round"/>
+
+                            <rect x="115" y="140" width="170" height="220" rx="15" fill="url(#water)"/>
+                            <circle cx="140" cy="180" r="5" fill="#fff" opacity="0.6"/>
+                            <circle cx="160" cy="240" r="8" fill="#fff" opacity="0.4"/>
+                            <circle cx="250" cy="190" r="6" fill="#fff" opacity="0.3"/>
+                            <circle cx="230" cy="300" r="4" fill="#fff" opacity="0.7"/>
+                            <circle cx="180" cy="280" r="9" fill="#fff" opacity="0.5"/>
+
+                            <rect x="110" y="135" width="180" height="470" rx="20" fill="none" stroke="#fff" stroke-width="3" opacity="0.5"/>
+
+                            <rect x="100" y="375" width="200" height="15" fill="url(#darkMetal)"/>
+
+                            <rect x="125" y="405" width="150" height="195" rx="10" fill="#0f172a" stroke="#cbd5e1" stroke-width="2"/>
+                            
+                            <g transform="translate(165, 415)">
+                                <rect x="15" y="0" width="40" height="20" rx="3" fill="#3b82f6"/>
+                                <rect x="10" y="20" width="50" height="130" rx="5" fill="url(#yellowBody)"/>
+                                <rect x="10" y="40" width="50" height="70" fill="#ffffff"/>
+                                <rect x="15" y="50" width="40" height="6" fill="#ca8a04" opacity="0.3"/>
+                                <rect x="15" y="60" width="40" height="4" fill="#ca8a04" opacity="0.3"/>
+                                <text x="35" y="80" font-family="sans-serif" font-size="14" font-weight="900" fill="#000" text-anchor="middle" transform="rotate(-90 35 75)" letter-spacing="1">EPIPEN</text>
+                                <rect x="15" y="150" width="40" height="25" rx="3" fill="#ea580c"/>
+                            </g>
+
+                            <rect x="95" y="605" width="210" height="40" rx="8" fill="url(#darkMetal)"/>
+                            <rect x="110" y="605" width="4" height="40" fill="#1e293b"/>
+                            <rect x="130" y="605" width="4" height="40" fill="#1e293b"/>
+                            <rect x="150" y="605" width="4" height="40" fill="#1e293b"/>
+                            <rect x="170" y="605" width="4" height="40" fill="#1e293b"/>
+                            <rect x="190" y="605" width="4" height="40" fill="#1e293b"/>
+                            <rect x="210" y="605" width="4" height="40" fill="#1e293b"/>
+                            <rect x="230" y="605" width="4" height="40" fill="#1e293b"/>
+                            <rect x="250" y="605" width="4" height="40" fill="#1e293b"/>
+                            <rect x="270" y="605" width="4" height="40" fill="#1e293b"/>
+
+                            <g font-family="Inter, sans-serif" font-size="15" fill="#334155" font-weight="600">
+                                <polyline points="220,100 350,60 380,60" fill="none" stroke="#94a3b8" stroke-width="2"/>
+                                <circle cx="220" cy="100" r="5" fill="#0284c7"/>
+                                <text x="390" y="65">Drinking Cap</text>
+
+                                <polyline points="200,250 350,230 380,230" fill="none" stroke="#94a3b8" stroke-width="2"/>
+                                <circle cx="200" cy="250" r="5" fill="#0284c7"/>
+                                <text x="390" y="235">Water Reservoir</text>
+
+                                <polyline points="295,300 350,320 380,320" fill="none" stroke="#94a3b8" stroke-width="2"/>
+                                <circle cx="295" cy="300" r="5" fill="#0284c7"/>
+                                <text x="390" y="325">Vacuum Insulation</text>
+
+                                <polyline points="230,480 350,460 380,460" fill="none" stroke="#94a3b8" stroke-width="2"/>
+                                <circle cx="230" cy="480" r="5" fill="#0284c7"/>
+                                <text x="390" y="465">EpiPen Auto-Injector</text>
+
+                                <polyline points="275,540 350,560 380,560" fill="none" stroke="#94a3b8" stroke-width="2"/>
+                                <circle cx="275" cy="540" r="5" fill="#0284c7"/>
+                                <text x="390" y="565">Secure Compartment</text>
+
+                                <polyline points="250,625 350,645 380,645" fill="none" stroke="#94a3b8" stroke-width="2"/>
+                                <circle cx="250" cy="625" r="5" fill="#0284c7"/>
+                                <text x="390" y="650">Rapid Access Cap</text>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Market Opportunity Section -->
+    <section id="market" class="py-24 bg-slate-900 text-white relative overflow-hidden">
+        <!-- Abstract background elements -->
+        <div class="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-blue-500 opacity-10 blur-3xl"></div>
+        <div class="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full bg-cyan-500 opacity-10 blur-3xl"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center max-w-3xl mx-auto mb-16 fade-up">
+                <h2 class="text-3xl font-bold tracking-tight sm:text-4xl mb-4">Market Opportunity</h2>
+                <p class="text-lg text-slate-300">A massive unmet need with a clear path to market entry and scaling.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                <!-- TAM -->
+                <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-3xl p-8 fade-up">
+                    <p class="text-blue-400 text-sm font-bold tracking-widest uppercase mb-4">Total Addressable</p>
+                    <h3 class="text-5xl font-extrabold mb-2">$297M</h3>
+                    <div class="h-px w-12 bg-slate-700 mx-auto my-4"></div>
+                    <p class="text-2xl font-semibold mb-2">6.6 Million</p>
+                    <p class="text-slate-400 text-sm">People at risk of anaphylaxis in the U.S.</p>
+                </div>
+                
+                <!-- SAM -->
+                <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-3xl p-8 transform md:-translate-y-4 shadow-2xl shadow-blue-900/50 border-t-blue-500/30 fade-up delay-100">
+                    <p class="text-blue-400 text-sm font-bold tracking-widest uppercase mb-4">Serviceable</p>
+                    <h3 class="text-5xl font-extrabold mb-2">$162M</h3>
+                    <div class="h-px w-12 bg-slate-700 mx-auto my-4"></div>
+                    <p class="text-2xl font-semibold mb-2">3.6 Million</p>
+                    <p class="text-slate-400 text-sm">People prescribed epinephrine auto-injectors.</p>
+                </div>
+
+                <!-- SOM -->
+                <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-3xl p-8 fade-up delay-200">
+                    <p class="text-blue-400 text-sm font-bold tracking-widest uppercase mb-4">Obtainable</p>
+                    <h3 class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 mb-2">$16.2M</h3>
+                    <div class="h-px w-12 bg-slate-700 mx-auto my-4"></div>
+                    <p class="text-2xl font-semibold mb-2">360,000</p>
+                    <p class="text-slate-400 text-sm">Early users targeted (10% of prescribed population).</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Shop / Configurator Section -->
+    <section id="shop" class="py-24 bg-slate-50 border-t border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                
+                <!-- Left: Interactive Preview -->
+                <div class="fade-up relative flex justify-center items-center bg-white p-8 md:p-12 rounded-[3rem] shadow-xl border border-slate-100">
+                    <div class="absolute inset-0 bg-gradient-to-tr from-slate-100 to-slate-50 rounded-[3rem] transform -rotate-2 scale-105 -z-10"></div>
+                    
+                    <!-- SVG Interactive Bottle -->
+                    <svg viewBox="0 0 200 600" class="w-full h-auto max-w-sm drop-shadow-2xl" id="product-svg">
+                        <defs>
+                            <!-- 3D Cylinder Shading Gradient -->
+                            <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#fff" stop-opacity="0.35"/>
+                                <stop offset="15%" stop-color="#fff" stop-opacity="0.0"/>
+                                <stop offset="85%" stop-color="#000" stop-opacity="0.0"/>
+                                <stop offset="100%" stop-color="#000" stop-opacity="0.25"/>
+                            </linearGradient>
+                            <filter id="softShadow">
+                                <feDropShadow dx="0" dy="10" stdDeviation="15" flood-opacity="0.2"/>
+                            </filter>
+                        </defs>
+                        
+                        <!-- Lid -->
+                        <path d="M 120 35 C 160 30, 160 65, 120 60" fill="none" stroke="#B098D3" stroke-width="12" stroke-linecap="round" id="lid-loop" style="transition: stroke 0.4s ease;" />
+                        <rect x="60" y="30" width="70" height="25" rx="5" fill="#B098D3" id="lid-top" style="transition: fill 0.4s ease;" />
+                        <rect x="50" y="55" width="100" height="25" rx="4" fill="#B098D3" id="lid-base" style="transition: fill 0.4s ease;" />
+                        <rect x="45" y="80" width="110" height="15" rx="3" fill="#B098D3" id="lid-collar" style="transition: fill 0.4s ease;" />
+                        <rect x="45" y="30" width="110" height="65" fill="url(#bodyGrad)" pointer-events="none" rx="3" opacity="0.4"/>
+
+                        <!-- Bottle Body -->
+                        <rect x="40" y="95" width="120" height="385" fill="#B098D3" id="bottle-body" style="transition: fill 0.4s ease;"/>
+                        <rect x="40" y="95" width="120" height="385" fill="url(#bodyGrad)" pointer-events="none"/>
+
+                        <!-- Logo -->
+                        <g transform="translate(100, 270) scale(0.6)">
+                            <path d="M 0 -50 C 30 -10, 40 20, 40 40 C 40 65, 20 80, 0 80 C -20 80, -40 65, -40 40 C -40 20, -30 -10, 0 -50 Z" fill="#ffffff" filter="url(#softShadow)"/>
+                            <g transform="scale(0.35) translate(0, 30)" fill="#B098D3" id="bottle-logo-inner" style="transition: fill 0.4s ease;">
+                                <rect x="-15" y="-45" width="30" height="90" rx="3"/>
+                                <rect x="-15" y="-45" width="30" height="90" rx="3" transform="rotate(60)"/>
+                                <rect x="-15" y="-45" width="30" height="90" rx="3" transform="rotate(120)"/>
+                                <path d="M -8 -25 C -20 -40, 20 -40, 5 -10 C -10 10, 20 20, 5 35" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+                                <rect x="-3" y="-30" width="6" height="70" fill="#ffffff"/>
+                            </g>
+                        </g>
+
+                        <!-- Bottom Cap -->
+                        <path d="M 40 480 L 160 480 L 155 530 C 150 550, 130 550, 100 550 C 70 550, 50 550, 45 530 Z" fill="#82C3D1" id="bottle-cap" style="transition: fill 0.4s ease;"/>
+                        <path d="M 40 480 L 160 480 L 155 530 C 150 550, 130 550, 100 550 C 70 550, 50 550, 45 530 Z" fill="url(#bodyGrad)" pointer-events="none"/>
+                        <!-- Small seam line -->
+                        <rect x="40" y="478" width="120" height="3" fill="#000" opacity="0.1"/>
+                        <text x="100" y="530" font-family="Inter, sans-serif" font-weight="900" font-size="22" fill="#ffffff" text-anchor="middle" opacity="0.9" letter-spacing="1">EpiSip</text>
+                    </svg>
+                </div>
+
+                <!-- Right: Configuration Controls -->
+                <div class="fade-up delay-200">
+                    <div class="mb-2">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold tracking-wide uppercase">
+                            <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                            Pre-Order Now
+                        </span>
+                    </div>
+                    <h2 class="text-4xl sm:text-5xl font-extrabold text-slate-900 mb-2">EpiSip Original</h2>
+                    <p class="text-2xl font-medium text-slate-500 mb-6">$49.00</p>
+                    
+                    <p class="text-slate-600 mb-8 max-w-lg leading-relaxed">
+                        The world's first life-saving insulated water bottle. Includes the secure auto-injector compartment and rapid-release bottom cap. Pick the color combination that fits your lifestyle.
+                    </p>
+
+                    <div class="mb-8 border-t border-slate-200 pt-8">
+                        <div class="flex items-center justify-between mb-5">
+                            <h3 class="text-sm font-bold tracking-widest text-slate-900 uppercase">Select Color</h3>
+                            <span id="selected-color-name" class="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Lavender & Breeze</span>
+                        </div>
+                        
+                        <!-- Dynamic Grid of Colors -->
+                        <div class="grid grid-cols-5 sm:grid-cols-7 gap-3 sm:gap-4" id="color-grid">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <button class="w-full sm:w-auto px-10 py-4 text-lg font-bold rounded-full text-white bg-slate-900 hover:bg-slate-800 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3" onclick="alert('Added to cart! (Demo)')">
+                        <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                        Pre-Order Now
+                    </button>
+                    
+                    <p class="mt-4 text-sm text-slate-500 flex items-center justify-center sm:justify-start gap-2">
+                        <i data-lucide="truck" class="w-4 h-4"></i> Ships automatically upon full manufacturing clearance.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section id="team" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="mb-16 fade-up">
+                <h2 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Executive Team</h2>
+                <p class="mt-4 text-lg text-slate-600">The minds engineering the future of life-saving convenience.</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-12">
+                <!-- Team Member 1 -->
+                <div class="fade-up">
+                    <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 mx-auto mb-4 border-4 border-white shadow-lg flex items-center justify-center">
+                        <span class="text-2xl sm:text-3xl font-bold text-blue-600">ST</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Spruha Trivedi</h3>
+                    <p class="text-blue-600 font-medium">CEO</p>
+                </div>
+                <!-- Team Member 2 -->
+                <div class="fade-up delay-100">
+                    <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-cyan-100 to-cyan-200 mx-auto mb-4 border-4 border-white shadow-lg flex items-center justify-center">
+                        <span class="text-2xl sm:text-3xl font-bold text-cyan-600">JS</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Jia Saheta</h3>
+                    <p class="text-blue-600 font-medium">CPO</p>
+                </div>
+                <!-- Team Member 3 -->
+                <div class="fade-up delay-200">
+                    <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 mx-auto mb-4 border-4 border-white shadow-lg flex items-center justify-center">
+                        <span class="text-2xl sm:text-3xl font-bold text-indigo-600">TR</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Trishana Raj</h3>
+                    <p class="text-blue-600 font-medium">CIO</p>
+                </div>
+                <!-- Team Member 4 -->
+                <div class="fade-up">
+                    <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-sky-100 to-sky-200 mx-auto mb-4 border-4 border-white shadow-lg flex items-center justify-center">
+                        <span class="text-2xl sm:text-3xl font-bold text-sky-600">AB</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Aarushi Basu</h3>
+                    <p class="text-blue-600 font-medium">COO</p>
+                </div>
+                <!-- Team Member 5 -->
+                <div class="fade-up delay-100">
+                    <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-teal-100 to-teal-200 mx-auto mb-4 border-4 border-white shadow-lg flex items-center justify-center">
+                        <span class="text-2xl sm:text-3xl font-bold text-teal-600">TV</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Tarini Vadlamudi</h3>
+                    <p class="text-blue-600 font-medium">CMO</p>
+                </div>
+                <!-- Team Member 6 -->
+                <div class="fade-up delay-200">
+                    <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 mx-auto mb-4 border-4 border-white shadow-lg flex items-center justify-center">
+                        <span class="text-2xl sm:text-3xl font-bold text-blue-400">MR</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Madison Rankin</h3>
+                    <p class="text-blue-600 font-medium">CFO</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section id="cta" class="py-20 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-600 to-cyan-600"></div>
+        <!-- Decorative abstract lines -->
+        <svg class="absolute left-0 top-0 h-full w-full opacity-20" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <path d="M0 100 C 20 0 50 0 100 100 Z" fill="none" stroke="white" stroke-width="0.5" />
+            <path d="M0 50 C 40 100 60 100 100 50 Z" fill="none" stroke="white" stroke-width="0.5" />
+        </svg>
+
+        <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white z-10 fade-up">
+            <h2 class="text-4xl md:text-5xl font-bold tracking-tight mb-6">Ready to make safety seamless?</h2>
+            <p class="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">Join our waitlist to be among the first 360,000 early adopters to get EpiSip at a special founder's price.</p>
+            <form class="flex flex-col sm:flex-row max-w-lg mx-auto gap-3" onsubmit="event.preventDefault(); alert('Thanks for joining the waitlist! (Demo)');">
+                <input type="email" placeholder="Enter your email" required class="flex-1 px-6 py-4 rounded-full text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-300 shadow-lg">
+                <button type="submit" class="px-8 py-4 bg-slate-900 text-white font-bold rounded-full hover:bg-slate-800 transition-colors shadow-lg whitespace-nowrap">
+                    Join Waitlist
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 text-slate-400 py-12 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            
+            <!-- Left: Logo -->
+            <div class="flex items-center gap-3">
+                <svg viewBox="0 0 100 120" class="h-8 w-auto rounded shadow-sm" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="100" height="120" fill="#00A3A6"/>
+                    <path d="M50 15 C50 15 20 60 20 80 A 30 30 0 0 0 80 80 C80 60 50 15 50 15 Z" fill="white"/>
+                    <g transform="translate(50, 75) scale(0.35)" fill="#00A3A6">
+                        <rect x="-10" y="-35" width="20" height="70" rx="2" />
+                        <rect x="-10" y="-35" width="20" height="70" rx="2" transform="rotate(60)" />
+                        <rect x="-10" y="-35" width="20" height="70" rx="2" transform="rotate(120)" />
+                        <rect x="-2" y="-20" width="4" height="40" fill="white" />
+                        <path d="M -6 -10 C -15 -20, 10 -20, 2 -5 C -5 5, 10 10, 2 15" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                    </g>
+                </svg>
+                <span class="font-bold text-lg tracking-tight text-white">EpiSip</span>
+            </div>
+            
+            <!-- Middle: Instagram + Copyright -->
+            <div class="flex items-center gap-3 text-sm">
+                <a href="https://www.instagram.com/safetysipbottles/" target="_blank" rel="noopener noreferrer" class="hover:text-pink-500 transition-colors text-white flex items-center justify-center w-9 h-9 bg-slate-800 hover:bg-slate-700 rounded-full" aria-label="Visit our Instagram">
+                    <!-- Inline SVG ensures the logo always renders correctly -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                </a>
+                <span class="hidden sm:inline text-slate-600">|</span>
+                <p>© 2026 EpiSip Startup. Every sip saves a life.</p>
+            </div>
+
+            <!-- Right: Other Links -->
+            <div class="flex space-x-4">
+                <a href="#" class="hover:text-white transition-colors"><i data-lucide="twitter" class="w-5 h-5"></i></a>
+                <a href="#" class="hover:text-white transition-colors"><i data-lucide="mail" class="w-5 h-5"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- --- NEW CHAT WIDGET HTML --- -->
+    <div class="chat-widget">
+        <div class="chat-window" id="chatWindow">
+            <div class="chat-header">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="bot" class="w-5 h-5 text-blue-400"></i>
+                    <span>EpiSip Assistant</span>
+                </div>
+                <button class="chat-close" id="chatClose" aria-label="Close chat">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-msg ai">Hi there! I'm here to help. Ask me anything about EpiSip.</div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" class="chat-input" placeholder="Type your message..." autocomplete="off">
+                <button class="chat-send" id="chatSend" aria-label="Send message">
+                    <i data-lucide="send" class="w-4 h-4 ml-1"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chat-btn" id="chatBtn" aria-label="Open chat">
+            <i data-lucide="message-circle" class="w-8 h-8"></i>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT SECTION -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Navbar Scroll Effect
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 20) {
+                navbar.classList.add('shadow-sm');
+                navbar.style.background = 'rgba(255, 255, 255, 0.9)';
+            } else {
+                navbar.classList.remove('shadow-sm');
+                navbar.style.background = 'rgba(255, 255, 255, 0.8)';
+            }
+        });
+
+        // Intersection Observer for Fade-Up Animations
+        document.addEventListener("DOMContentLoaded", () => {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.15
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target); // Run once
+                    }
+                });
+            }, observerOptions);
+
+            const fadeElements = document.querySelectorAll('.fade-up');
+            fadeElements.forEach(el => observer.observe(el));
+        });
+
+        // -----------------------------------------------------
+        // Interactive Color Configurator Logic
+        // -----------------------------------------------------
+        
+        // Colors mapped directly from the uploaded reference image
+        const productColors = [
+            { name: "Lavender & Breeze", body: "#B098D3", cap: "#82C3D1" },
+            { name: "Sunset & Teal", body: "#FA9D49", cap: "#00A3A6" },
+            { name: "Navy & Pearl", body: "#103260", cap: "#FFFFFF" },
+            { name: "Crimson & Blush", body: "#A31F41", cap: "#EAB7CA" },
+            { name: "Rose & Lilac", body: "#FDA8F2", cap: "#C3B4E3" },
+            { name: "Slate & Mint", body: "#EAEBEB", cap: "#CBF3D6" },
+            { name: "Storm & Stone", body: "#7381A5", cap: "#E5E6E6" },
+            { name: "Sand & Ocean", body: "#E1B18D", cap: "#00A3A6" },
+            { name: "Graphite & Blue", body: "#525252", cap: "#0045A6" },
+            { name: "Matcha & Lemon", body: "#98C97A", cap: "#F9F18D" },
+            { name: "Charcoal & Onyx", body: "#415152", cap: "#161616" },
+            { name: "Ruby & Ash", body: "#BE202A", cap: "#858585" },
+            { name: "Midnight & Ice", body: "#283344", cap: "#F0F1F1" }
+        ];
+
+        const colorGrid = document.getElementById('color-grid');
+        const colorNameDisplay = document.getElementById('selected-color-name');
+        
+        // SVG Elements
+        const svgBody = document.getElementById('bottle-body');
+        const svgCap = document.getElementById('bottle-cap');
+        const svgLogo = document.getElementById('bottle-logo-inner');
+        const lidTop = document.getElementById('lid-top');
+        const lidBase = document.getElementById('lid-base');
+        const lidCollar = document.getElementById('lid-collar');
+        const lidLoop = document.getElementById('lid-loop');
+
+        // Populate the color selection grid
+        productColors.forEach((color, index) => {
+            const btn = document.createElement('button');
+            const isActive = index === 0; // Default active state
+            
+            btn.className = `w-12 h-12 sm:w-14 sm:h-14 rounded-full border-[3px] focus:outline-none transition-transform hover:scale-110 shadow-sm ${isActive ? 'border-blue-500 scale-110 shadow-md' : 'border-transparent'}`;
+            // Diagonal gradient to show both body and cap color
+            btn.style.background = `linear-gradient(135deg, ${color.body} 50%, ${color.cap} 50%)`;
+            btn.setAttribute('aria-label', color.name);
+            
+            btn.onclick = () => {
+                // Update SVG elements with smooth transitions
+                svgBody.setAttribute('fill', color.body);
+                svgCap.setAttribute('fill', color.cap);
+                svgLogo.setAttribute('fill', color.body);
+                lidTop.setAttribute('fill', color.body);
+                lidBase.setAttribute('fill', color.body);
+                lidCollar.setAttribute('fill', color.body);
+                lidLoop.setAttribute('stroke', color.body);
+                
+                // Update text label
+                colorNameDisplay.textContent = color.name;
+                
+                // Update button active states
+                Array.from(colorGrid.children).forEach(child => {
+                    child.classList.remove('border-blue-500', 'scale-110', 'shadow-md');
+                    child.classList.add('border-transparent');
+                });
+                btn.classList.remove('border-transparent');
+                btn.classList.add('border-blue-500', 'scale-110', 'shadow-md');
+            };
+            
+            colorGrid.appendChild(btn);
+        });
+
+        // -----------------------------------------------------
+        // Interactive AI Assistant Logic
+        // -----------------------------------------------------
+        const chatBtn = document.getElementById('chatBtn');
+        const chatWindow = document.getElementById('chatWindow');
+        const chatClose = document.getElementById('chatClose');
+        const chatInput = document.getElementById('chatInput');
+        const chatSend = document.getElementById('chatSend');
+        const chatMessages = document.getElementById('chatMessages');
+
+        let isChatOpen = false;
+
+        function toggleChat() {
+            isChatOpen = !isChatOpen;
+            if (isChatOpen) {
+                chatWindow.classList.add('open');
+                setTimeout(() => chatInput.focus(), 300);
+            } else {
+                chatWindow.classList.remove('open');
+            }
+        }
+
+        chatBtn.addEventListener('click', toggleChat);
+        chatClose.addEventListener('click', toggleChat);
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addMessage(text, sender) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `chat-msg ${sender}`;
+            msgDiv.textContent = text;
+            chatMessages.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'chat-msg ai';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            chatMessages.appendChild(typingDiv);
+            scrollToBottom();
+        }
+
+        function removeTypingIndicator() {
+            const typingDiv = document.getElementById('typingIndicator');
+            if (typingDiv) {
+                typingDiv.remove();
+            }
+        }
+
+        function getBotResponse(userMsg) {
+            const text = userMsg.toLowerCase();
+            
+            // Rules engine matching the requested keywords
+            if (text.includes('price')) {
+                return "EpiSip is currently in development. Pricing will be affordable and competitive.";
+            } else if (text.includes('how') || text.includes('work')) {
+                return "EpiSip stores your epinephrine auto injector inside a secure insulated water bottle with quick access in emergencies.";
+            } else if (text.includes('why')) {
+                return "Many people forget or cannot access their EpiPen quickly. EpiSip solves this by integrating it into something you already carry.";
+            } else if (text.includes('size')) {
+                return "It is slightly thicker than a standard bottle but designed to remain compact and easy to carry.";
+            } else if (text.includes('safe') || text.includes('safety')) {
+                return "The EpiPen compartment is secure, protected, and designed for quick and safe access.";
+            } else if (text.includes('buy') || text.includes('purchase')) {
+                return "We will announce availability soon. Stay tuned for updates.";
+            } else {
+                return "I’m here to help. Ask me anything about EpiSip.";
+            }
+        }
+
+        function handleSend() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            // Display user's message
+            addMessage(text, 'user');
+            chatInput.value = ''; // Clear input
+
+            // Show simulated typing status
+            showTypingIndicator();
+
+            // Calculate random typing delay between 500ms and 1000ms
+            const delay = Math.floor(Math.random() * 500) + 500;
+            
+            setTimeout(() => {
+                removeTypingIndicator();
+                const response = getBotResponse(text);
+                addMessage(response, 'ai');
+            }, delay);
+        }
+
+        chatSend.addEventListener('click', handleSend);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleSend();
+            }
+        });
+
+    </script>
+</body>
+</html>
